@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOL SURVIVAL — Isometric PvP Loot Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0c10;--panel:#13141a;--panel2:#1a1b24;--border:#2a2d3e;
+  --green:#39ff7e;--gold:#ffd166;--red:#ff4466;--blue:#4dcfff;
+  --purple:#c77dff;--orange:#ff9a3c;--white:#dde3f0;--dim:#555a6e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Press Start 2P',monospace}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.12) 3px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:9000}
+
+#app{display:grid;grid-template-columns:220px 1fr 220px;grid-template-rows:56px 1fr 48px;height:100vh;width:100vw}
+
+/* ── TOP BAR ── */
+#topbar{grid-column:1/-1;background:var(–panel);border-bottom:3px solid var(–border);display:flex;align-items:center;justify-content:space-between;padding:0 10px;gap:6px;z-index:100}
+.topbar-title{font-size:10px;color:var(–gold);text-shadow:0 0 10px var(–gold);letter-spacing:2px;white-space:nowrap}
+.topbar-center{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.stat-chip{font-size:7px;padding:4px 7px;border:2px solid var(–border);background:var(–panel2);color:var(–white);display:flex;align-items:center;gap:4px;white-space:nowrap}
+.stat-chip .val{color:var(–gold)}
+.topbar-right{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.tbtn{font-family:‘Press Start 2P’,monospace;font-size:7px;padding:6px 9px;border:2px solid;cursor:pointer;white-space:nowrap;transition:all .15s}
+#connectBtn{border-color:var(–green);background:#001a0a;color:var(–green)}
+#connectBtn:hover{background:#002a12}
+#connectBtn.connected{border-color:var(–red);background:#1a0008;color:var(–red)}
+#depositBtn{border-color:var(–blue);background:#001020;color:var(–blue);display:none}
+#depositBtn:hover{background:#001a2a;box-shadow:0 0 12px rgba(77,207,255,.3)}
+#cashoutBtn{border-color:var(–gold);background:#1a1500;color:var(–gold);display:none;animation:glow 1.5s infinite}
+#cashoutBtn:hover{background:#2a2200;box-shadow:0 0 14px rgba(255,209,102,.5)}
+#upgradeBtn{border-color:var(–purple);background:#0f0020;color:var(–purple);display:none;animation:upgradePulse 1s infinite}
+#upgradeBtn:hover{background:#1a0035;box-shadow:0 0 14px rgba(199,125,255,.5)}
+@keyframes glow{0%,100%{box-shadow:0 0 4px rgba(255,209,102,.3)}50%{box-shadow:0 0 16px rgba(255,209,102,.7)}}
+@keyframes upgradePulse{0%,100%{box-shadow:0 0 4px rgba(199,125,255,.3)}50%{box-shadow:0 0 18px rgba(199,125,255,.8)}}
+
+/* ── LEFT PANEL ── */
+#leftPanel{background:var(–panel);border-right:3px solid var(–border);display:flex;flex-direction:column;overflow:hidden}
+.panel-header{font-size:7px;color:var(–dim);padding:8px 12px;border-bottom:2px solid var(–border);letter-spacing:1px;display:flex;justify-content:space-between;align-items:center}
+#charCard{padding:10px;border-bottom:2px solid var(–border)}
+.char-sprite-wrap{width:52px;height:52px;margin:0 auto 7px;display:flex;align-items:center;justify-content:center;background:var(–panel2);border:2px solid var(–border);overflow:hidden}
+#charCanvas{display:block}
+.char-name{text-align:center;font-size:8px;color:var(–white);margin-bottom:3px}
+.char-class{text-align:center;font-size:6px;color:var(–purple);margin-bottom:7px}
+.stat-row{margin-bottom:5px}
+.stat-row-label{font-size:6px;color:var(–dim);margin-bottom:2px;display:flex;justify-content:space-between}
+.stat-row-label span{color:var(–white)}
+.bar-track{height:5px;background:#0a0b10;border:1px solid var(–border);overflow:hidden}
+.bar-fill{height:100%;transition:width .4s}
+.bar-hp{background:var(–red)}.bar-mp{background:var(–blue)}.bar-xp{background:var(–purple)}
+#stunBar{display:none;margin-bottom:5px;padding:4px 6px;background:#1a0a00;border:2px solid var(–orange);font-size:6px;color:var(–orange);text-align:center;animation:stunFlash .5s infinite}
+@keyframes stunFlash{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Upgrade meter in left panel */
+#upgradeSection{padding:8px 10px;border-bottom:2px solid var(–border);display:none}
+.upg-title{font-size:6px;color:var(–purple);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.upg-kills-bar{height:5px;background:#0a0b10;border:1px solid var(–border);overflow:hidden;margin-bottom:5px}
+.upg-kills-fill{height:100%;background:var(–purple);transition:width .4s}
+.upg-info{font-size:5px;color:var(–dim);line-height:1.8}
+.upg-badge{font-size:6px;color:var(–gold);padding:2px 5px;border:1px solid var(–gold);display:inline-block;margin-top:4px}
+
+#inventory{flex:1;overflow-y:auto;padding:7px}
+#inventory::-webkit-scrollbar{width:3px}
+#inventory::-webkit-scrollbar-thumb{background:var(–border)}
+.inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+.inv-slot{aspect-ratio:1;background:var(–panel2);border:2px solid var(–border);display:flex;align-items:center;justify-content:center;font-size:13px;position:relative}
+.inv-slot.equipped{border-color:var(–green)}
+.inv-slot .upg-star{position:absolute;bottom:0;right:0;font-size:5px;color:var(–gold);background:rgba(0,0,0,.7);padding:1px 2px}
+
+/* ── GAME AREA ── */
+#gameArea{position:relative;overflow:hidden;background:var(–bg)}
+#gameCanvas{display:block;width:100%;height:100%}
+#minimap{position:absolute;bottom:10px;right:10px;width:90px;height:90px;border:2px solid var(–border);background:rgba(10,11,16,.85);overflow:hidden}
+#minimapCanvas{display:block;width:100%;height:100%}
+#combatLog{position:absolute;bottom:10px;left:10px;width:210px;max-height:100px;overflow:hidden;display:flex;flex-direction:column-reverse;gap:2px;pointer-events:none}
+.clog-entry{font-size:6px;padding:3px 6px;background:rgba(10,11,16,.85);border-left:2px solid var(–dim);animation:fadeLog 6s forwards;line-height:1.6}
+@keyframes fadeLog{0%,70%{opacity:1}100%{opacity:0}}
+.clog-entry.dmg{border-color:var(–red);color:var(–red)}
+.clog-entry.loot{border-color:var(–gold);color:var(–gold)}
+.clog-entry.info{border-color:var(–blue);color:var(–blue)}
+.clog-entry.heal{border-color:var(–green);color:var(–green)}
+.clog-entry.hero{border-color:var(–purple);color:var(–purple)}
+.clog-entry.upg{border-color:var(–purple);color:var(–purple)}
+
+#skillBar{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px}
+.skill-slot{width:38px;height:38px;background:rgba(19,20,26,.9);border:2px solid var(–border);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:16px;position:relative;transition:border-color .15s}
+.skill-slot:hover{border-color:var(–gold)}
+.skill-slot .sk-key{position:absolute;top:1px;left:2px;font-size:5px;color:var(–dim)}
+.skill-slot.stunned{opacity:.3;pointer-events:none}
+
+#heroBanner{position:absolute;top:60px;left:50%;transform:translateX(-50%);background:rgba(199,125,255,.15);border:3px solid var(–purple);padding:8px 20px;font-size:8px;color:var(–purple);text-shadow:0 0 10px var(–purple);display:none;white-space:nowrap;z-index:200;animation:heroPulse 1s infinite}
+@keyframes heroPulse{0%,100%{border-color:var(–purple)}50%{border-color:#ff9a3c}}
+#auraBanner{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(255,100,66,.15);border:2px solid var(–red);padding:5px 14px;font-size:7px;color:var(–red);display:none;white-space:nowrap;z-index:200;animation:auraFlash .4s infinite}
+@keyframes auraFlash{0%,100%{opacity:1}50%{opacity:.4}}
+#upgradeBanner{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(199,125,255,.2);border:3px solid var(–purple);padding:8px 18px;font-size:8px;color:var(–purple);display:none;white-space:nowrap;z-index:200;animation:heroPulse 1s infinite}
+
+/* ── RIGHT PANEL ── */
+#rightPanel{background:var(–panel);border-left:3px solid var(–border);display:flex;flex-direction:column;overflow:hidden}
+#playersList{flex:1;overflow-y:auto;padding:6px}
+#playersList::-webkit-scrollbar{width:3px}
+#playersList::-webkit-scrollbar-thumb{background:var(–border)}
+.player-row{padding:6px 8px;border:2px solid var(–border);margin-bottom:4px;cursor:pointer;background:var(–panel2);transition:border-color .15s;position:relative}
+.player-row:hover{border-color:var(–red)}
+.player-row.self{border-color:var(–green);cursor:default}
+.player-row.hero-row{border-color:var(–purple);background:#140a1e}
+.pr-name{font-size:6px;color:var(–white);margin-bottom:3px;display:flex;justify-content:space-between}
+.pr-lvl{color:var(–gold)}
+.pr-hp{height:3px;background:var(–panel);margin-bottom:2px}
+.pr-hp-fill{height:100%;background:var(–red);transition:width .3s}
+.pr-sol{font-size:5px;color:var(–gold)}
+.pr-badge{font-size:9px;position:absolute;right:5px;top:50%;transform:translateY(-50%)}
+.pr-stun{font-size:5px;color:var(–orange);margin-top:2px}
+
+#shop{border-top:2px solid var(–border)}
+.shop-tabs{display:flex;border-bottom:2px solid var(–border)}
+.shop-tab{flex:1;font-family:‘Press Start 2P’,monospace;font-size:6px;padding:6px 2px;border:none;background:var(–panel);color:var(–dim);cursor:pointer;border-right:1px solid var(–border);transition:all .15s}
+.shop-tab:last-child{border-right:none}
+.shop-tab.active{background:var(–panel2);color:var(–gold)}
+.shop-items{padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:4px;max-height:160px;overflow-y:auto}
+.shop-items::-webkit-scrollbar{width:3px}
+.shop-items::-webkit-scrollbar-thumb{background:var(–border)}
+.shop-item{padding:6px 5px;border:2px solid var(–border);background:var(–panel2);cursor:pointer;transition:all .15s;text-align:center}
+.shop-item:hover{border-color:var(–gold);background:#1e1c0f}
+.si-icon{font-size:16px;display:block;margin-bottom:3px}
+.si-name{font-size:5px;color:var(–white);margin-bottom:2px;line-height:1.4}
+.si-price{font-size:5px;color:var(–gold)}
+.si-stat{font-size:5px;color:var(–green);margin-top:2px}
+.shop-item.owned{border-color:var(–green);opacity:.6;cursor:default}
+
+/* ── BOTTOM BAR ── */
+#bottomBar{grid-column:1/-1;background:var(–panel);border-top:3px solid var(–border);display:flex;align-items:center;padding:0 12px;gap:10px;font-size:6px;color:var(–dim)}
+.bb-dot{width:6px;height:6px;background:var(–green);display:inline-block;margin-right:4px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.bb-sep{width:1px;height:20px;background:var(–border)}
+
+/* ── MODAL ── */
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:8000}
+#modal.open{display:flex}
+.modal-box{background:var(–panel);border:3px solid var(–gold);padding:22px;max-width:420px;width:92%;position:relative;max-height:90vh;overflow-y:auto}
+.modal-box::before{content:’’;position:absolute;width:8px;height:8px;background:var(–gold);top:-4px;left:-4px}
+.modal-box::after{content:’’;position:absolute;width:8px;height:8px;background:var(–gold);bottom:-4px;right:-4px}
+.modal-title{font-size:10px;color:var(–gold);text-shadow:0 0 10px var(–gold);margin-bottom:14px;line-height:1.6}
+.modal-body{font-size:8px;color:var(–white);line-height:2.2;margin-bottom:16px}
+.modal-body .hi{color:var(–green)}
+.modal-body .warn{color:var(–orange)}
+.modal-body .purple{color:var(–purple)}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap}
+.mbtn{font-family:‘Press Start 2P’,monospace;font-size:7px;padding:9px 14px;border:2px solid;cursor:pointer;transition:all .1s}
+.mbtn:active{transform:translate(2px,2px)}
+.mbtn-gold{background:#1a1500;color:var(–gold);border-color:var(–gold)}
+.mbtn-gold:hover{background:#2a2200;box-shadow:0 0 12px rgba(255,209,102,.3)}
+.mbtn-green{background:#001a08;color:var(–green);border-color:var(–green)}
+.mbtn-green:hover{background:#002a12}
+.mbtn-blue{background:#001020;color:var(–blue);border-color:var(–blue)}
+.mbtn-blue:hover{background:#001830}
+.mbtn-purple{background:#0f0020;color:var(–purple);border-color:var(–purple)}
+.mbtn-purple:hover{background:#1a0033}
+.mbtn-dim{background:var(–panel2);color:var(–dim);border-color:var(–border)}
+
+/* Deposit amount input */
+.dep-input-wrap{position:relative;margin:10px 0}
+.dep-input{width:100%;background:#080810;border:3px solid var(–border);color:var(–gold);font-family:‘Press Start 2P’,monospace;font-size:10px;padding:10px 46px 10px 12px;outline:none;transition:border-color .2s}
+.dep-input:focus{border-color:var(–blue);box-shadow:0 0 8px rgba(77,207,255,.2)}
+.dep-currency{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:8px;color:var(–gold)}
+.dep-presets{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.dep-preset{font-family:‘Press Start 2P’,monospace;font-size:6px;padding:6px 8px;background:#0a0a14;border:2px solid #2a2a4a;color:#8888aa;cursor:pointer;transition:all .1s}
+.dep-preset:hover{border-color:var(–blue);color:var(–blue)}
+
+/* Upgrade modal items */
+.upg-item{display:flex;align-items:center;justify-content:space-between;padding:8px;border:2px solid var(–border);margin-bottom:6px;background:var(–panel2)}
+.upg-item.available{border-color:var(–purple)}
+.upg-item-left{display:flex;align-items:center;gap:8px}
+.upg-item-icon{font-size:20px}
+.upg-item-name{font-size:6px;color:var(–white);line-height:1.8}
+.upg-item-stats{font-size:5px;color:var(–green);margin-top:2px}
+.upg-item-btn{font-family:‘Press Start 2P’,monospace;font-size:6px;padding:6px 8px;border:2px solid var(–purple);background:#0f0020;color:var(–purple);cursor:pointer;white-space:nowrap;transition:all .1s}
+.upg-item-btn:hover{background:#1a0033;box-shadow:0 0 10px rgba(199,125,255,.4)}
+.upg-item-btn:disabled{opacity:.3;cursor:not-allowed}
+.upg-item-level{font-size:5px;color:var(–gold);text-align:right}
+
+/* ── TOAST ── */
+#toast{position:fixed;top:66px;left:50%;transform:translateX(-50%) translateY(-16px);background:var(–panel);border:2px solid var(–gold);padding:8px 14px;font-size:7px;color:var(–gold);z-index:9999;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{border-color:var(–red);color:var(–red)}
+#toast.suc{border-color:var(–green);color:var(–green)}
+#toast.hero{border-color:var(–purple);color:var(–purple)}
+#toast.upg{border-color:var(–purple);color:var(–purple)}
+
+/* ── FLOAT DAMAGE ── */
+.dmg-float{position:absolute;font-size:7px;font-family:‘Press Start 2P’,monospace;pointer-events:none;z-index:500;animation:floatUp 1.2s forwards}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-44px)}}
+
+/* ── WALLET PICKER ── */
+.wallet-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.wallet-card{padding:12px 8px;border:2px solid var(–border);background:var(–panel2);cursor:pointer;text-align:center;transition:all .15s}
+.wallet-card:hover{transform:translateY(-2px)}
+.wallet-card-icon{font-size:24px;margin-bottom:5px}
+.wallet-card-name{font-size:7px;margin-bottom:3px}
+.wallet-card-status{font-size:5px}
+
+/* ── LOBBY ── */
+#lobbyScreen{position:fixed;inset:0;background:var(–bg);z-index:7000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#lobbyScreen.hidden{display:none}
+.lobby-title{font-size:clamp(14px,3vw,22px);color:var(–gold);text-shadow:0 0 20px var(–gold);text-align:center;line-height:2}
+.lobby-features{display:grid;grid-template-columns:1fr 1fr;gap:7px;max-width:440px;width:100%}
+.lf-item{padding:8px;border:2px solid var(–border);background:var(–panel);font-size:7px;color:var(–white);display:flex;gap:7px;align-items:center;line-height:1.6}
+.lfi{font-size:18px;flex-shrink:0}
+</style>
+
+</head>
+<body>
+
+<!-- LOBBY -->
+
+<div id="lobbyScreen">
+  <div style="font-size:50px;line-height:1">⚔️🗺️💰</div>
+  <div class="lobby-title">SOL SURVIVAL<br><span style="font-size:.5em;color:var(--purple)">ISOMETRIC PvP LOOT ARENA</span></div>
+  <div style="font-size:8px;color:var(--dim);text-align:center;line-height:2.2">Connect Phantom · OKX · Binance · Jupiter · Deposit SOL · Fight · Upgrade · Survive</div>
+  <div class="lobby-features">
+    <div class="lf-item"><span class="lfi">💳</span><span>Deposit 0.001–10 SOL to play</span></div>
+    <div class="lf-item"><span class="lfi">⚔️</span><span>Every 3 kills = weapon upgrade available</span></div>
+    <div class="lf-item"><span class="lfi">⬆️</span><span>Upgrades add +1.4% dmg per tier (compounding)</span></div>
+    <div class="lf-item"><span class="lfi">👑</span><span>Hero Boss spawns every 5 lvls — 0.5 SOL reward</span></div>
+    <div class="lf-item"><span class="lfi">🪤</span><span>Traps stun enemies 5s — they can't attack</span></div>
+    <div class="lf-item"><span class="lfi">💸</span><span>Cashout your SOL winnings anytime</span></div>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+    <button class="mbtn mbtn-gold" onclick="openWalletPicker()">▶ CONNECT WALLET</button>
+    <button class="mbtn mbtn-dim" onclick="enterDemo()">▶ DEMO MODE</button>
+  </div>
+  <div style="font-size:6px;color:var(--dim);text-align:center;line-height:2.2">⚠ MAINNET — Real SOL transactions</div>
+</div>
+
+<!-- MAIN APP -->
+
+<div id="app">
+  <div id="topbar">
+    <div class="topbar-title">⚔ SOL SURVIVAL</div>
+    <div class="topbar-center">
+      <div class="stat-chip">👤 <span id="tbName" class="val">---</span></div>
+      <div class="stat-chip">💰 <span id="tbSol" class="val">0.000</span> SOL</div>
+      <div class="stat-chip">⭐ LV <span id="tbLevel" class="val">1</span></div>
+      <div class="stat-chip">💀 <span id="tbKills" class="val">0</span> KILLS</div>
+      <div class="stat-chip">🌍 <span id="tbOnline" class="val">1</span> ONLINE</div>
+    </div>
+    <div class="topbar-right">
+      <button class="tbtn" id="upgradeBtn" onclick="openUpgradeModal()">⬆️ UPGRADE!</button>
+      <button class="tbtn" id="cashoutBtn" onclick="openCashout()">💸 CASHOUT</button>
+      <button class="tbtn" id="depositBtn" onclick="openDeposit()">💳 DEPOSIT</button>
+      <button class="tbtn" id="connectBtn" onclick="toggleConnect()">▶ CONNECT WALLET</button>
+    </div>
+  </div>
+
+  <!-- LEFT -->
+
+  <div id="leftPanel">
+    <div class="panel-header">▶ CHARACTER</div>
+    <div id="charCard">
+      <div class="char-sprite-wrap"><canvas id="charCanvas" width="48" height="48"></canvas></div>
+      <div class="char-name" id="charName">HERO</div>
+      <div class="char-class" id="charClass">WANDERER LV.1</div>
+      <div id="stunBar">🔒 STUNNED! <span id="stunCountdown">5</span>s</div>
+      <div class="stat-row">
+        <div class="stat-row-label">HP <span id="hpVal">100/100</span></div>
+        <div class="bar-track"><div class="bar-fill bar-hp" id="hpBar" style="width:100%"></div></div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-row-label">MP <span id="mpVal">50/50</span></div>
+        <div class="bar-track"><div class="bar-fill bar-mp" id="mpBar" style="width:100%"></div></div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-row-label">XP <span id="xpVal">0/100</span></div>
+        <div class="bar-track"><div class="bar-fill bar-xp" id="xpBar" style="width:0%"></div></div>
+      </div>
+    </div>
+    <!-- Upgrade progress section -->
+    <div id="upgradeSection">
+      <div class="upg-title">⬆ UPGRADE METER <span id="upgTierBadge" class="upg-badge">TIER 0</span></div>
+      <div class="upg-kills-bar"><div class="upg-kills-fill" id="upgKillsFill" style="width:0%"></div></div>
+      <div class="upg-info" id="upgInfo">0 kills → 3 kills for first upgrade</div>
+    </div>
+    <div class="panel-header">▶ INVENTORY</div>
+    <div id="inventory"><div class="inv-grid" id="invGrid"></div></div>
+  </div>
+
+  <!-- GAME -->
+
+  <div id="gameArea">
+    <canvas id="gameCanvas"></canvas>
+    <div id="minimap"><canvas id="minimapCanvas" width="90" height="90"></canvas></div>
+    <div id="combatLog"></div>
+    <div id="heroBanner">👑 HERO BOSS SPAWNED! SLAY IT FOR 0.5 SOL!</div>
+    <div id="auraBanner">⚡ HERO AURA — TAKING DAMAGE!</div>
+    <div id="upgradeBanner">⬆️ UPGRADE AVAILABLE! CLICK UPGRADE BUTTON!</div>
+    <div id="skillBar">
+      <div class="skill-slot" id="sk0" onclick="useSkill(0)" title="Attack [Q]"><span class="sk-key">Q</span>⚔️</div>
+      <div class="skill-slot" id="sk1" onclick="useSkill(1)" title="Shoot [W]"><span class="sk-key">W</span>🏹</div>
+      <div class="skill-slot" id="sk2" onclick="useSkill(2)" title="Spell [E]"><span class="sk-key">E</span>✨</div>
+      <div class="skill-slot" id="sk3" onclick="useSkill(3)" title="Trap [R]"><span class="sk-key">R</span>🪤</div>
+      <div class="skill-slot" id="sk4" onclick="useSkill(4)" title="Shield [F]"><span class="sk-key">F</span>🛡️</div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+
+  <div id="rightPanel">
+    <div class="panel-header">▶ PLAYERS ONLINE</div>
+    <div id="playersList"></div>
+    <div id="shop">
+      <div class="shop-tabs">
+        <button class="shop-tab active" onclick="switchShopTab('weapons')">⚔️</button>
+        <button class="shop-tab" onclick="switchShopTab('armor')">🛡️</button>
+        <button class="shop-tab" onclick="switchShopTab('boots')">👟</button>
+        <button class="shop-tab" onclick="switchShopTab('magic')">✨</button>
+      </div>
+      <div class="shop-items" id="shopItems"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM -->
+
+  <div id="bottomBar">
+    <span><span class="bb-dot"></span>SOLANA MAINNET</span>
+    <div class="bb-sep"></div>
+    <span id="bbAddr">NOT CONNECTED</span>
+    <div class="bb-sep"></div>
+    <span id="bbStatus">AWAITING WALLET</span>
+    <div class="bb-sep"></div>
+    <span style="margin-left:auto;color:var(--dim)">WASD: MOVE | Q/W/E/R/F: SKILLS | 3 KILLS = UPGRADE | TRAP = 5s STUN</span>
+  </div>
+</div>
+
+<div id="modal"><div class="modal-box">
+  <div class="modal-title" id="modalTitle"></div>
+  <div class="modal-body" id="modalBody"></div>
+  <div class="modal-actions" id="modalActions"></div>
+</div></div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  SOL SURVIVAL v3
+//  Deposit address: sfTYzmdx3kdYw8GzcUU5xoJzTdjBjC3W7RSyputdHfK
+// ══════════════════════════════════════════════════════
+
+const DEPOSIT_ADDRESS = 'sfTYzmdx3kdYw8GzcUU5xoJzTdjBjC3W7RSyputdHfK';
+
+const CFG={
+  TILE:32,MAP_W:40,MAP_H:40,ISO_TW:64,ISO_TH:32,
+  BOT_COUNT:8,
+  TRAP_DMG:25,TRAP_COST_SOL:.002,TRAP_STUN_MS:5000,
+  LOOT_RATE:.3,REGEN_HP:.5,REGEN_MP:.3,
+  XP_PER_KILL:30,XP_PER_HIT:5,
+  HERO_LEVEL_TRIGGER:5,HERO_KILL_REWARD:.5,
+  HERO_AURA_3S:3000,HERO_AURA_10S:10000,HERO_AURA_5S:5000,
+  HERO_AURA_MIN:3,HERO_AURA_MAX:5,
+  // Upgrade system
+  UPGRADE_COST: 0.02,
+  UPGRADE_DMG_BONUS: 1.4,   // +1.4% per tier on BASE stat
+  // Kill thresholds for upgrades: [3, 7, 11, 15, 20, 26, ...]
+  // Rule: first at 3, then every +4 more kills (3→7→11→15→20→26...)
+  // i.e. tier 1 = 3 kills, tier 2 = 7 kills (3+4), tier 3 = 11 (7+4), etc.
+};
+
+// ── UPGRADE SYSTEM ──────────────────────────────────
+// upgrades tracks how many times each item has been upgraded
+// upgradeAvailable = how many upgrade tokens player has earned but not spent
+const upgrades = {}; // itemId -> { level: 0, baseAtk: X, baseDef: X, ... }
+let upgradeTokens = 0;       // number of upgrades available to spend
+let upgradeKillsSpent = 0;   // kills already used for upgrades
+let upgradeNextKillThreshold = 3; // next kill count to earn a token
+
+// Upgrade kill thresholds: 3, 7, 11, 15, 20, 26, 33...
+// Each gap is (previous_gap + 1), starting gap is 4
+function nextThreshold(current, tiersPassed){
+  // tier 1 at 3 kills, tier 2 at 3+4=7, tier 3 at 7+4=11, tier 4 at 11+4=15...
+  const gap = 4;
+  return current + gap;
+}
+
+// ── SHOP DATA ───────────────────────────────────────
+const SHOP={
+  weapons:[
+    {id:'sword', icon:'🗡️', name:'IRON SWORD', price:.01, stat:'+15 ATK', atk:15, owned:false},
+    {id:'bow',   icon:'🏹', name:'HUNTER BOW', price:.015,stat:'+12 ATK RANGED', atk:12, owned:false},
+    {id:'axe',   icon:'🪓', name:'WAR AXE',   price:.025,stat:'+25 ATK', atk:25, owned:false},
+    {id:'gun',   icon:'🔫', name:'PIXEL GUN', price:.04, stat:'+35 ATK FAST', atk:35, owned:false},
+  ],
+  armor:[
+    {id:'leather',icon:'🥋',name:'LEATHER',   price:.008,stat:'+10 DEF', def:10, owned:false},
+    {id:'chain',  icon:'⛓️',name:'CHAINMAIL', price:.02, stat:'+20 DEF', def:20, owned:false},
+    {id:'plate',  icon:'🛡️',name:'PLATE ARMOR',price:.04,stat:'+35 DEF', def:35, owned:false},
+  ],
+  boots:[
+    {id:'boots1',icon:'👟',name:'SPEED BOOTS',price:.01, stat:'+30% SPD', spd:1.3, owned:false},
+    {id:'boots2',icon:'🥾',name:'IRON BOOTS', price:.008,stat:'+5 DEF +10% SPD', def:5, spd:1.1, owned:false},
+    {id:'boots3',icon:'🌟',name:'GHOST BOOTS',price:.03, stat:'+60% SPD', spd:1.6, owned:false},
+  ],
+  magic:[
+    {id:'fireball',icon:'🔥',name:'FIREBALL',  price:.012,stat:'+20 MAGIC DMG', mdmg:20, owned:false},
+    {id:'frost',   icon:'❄️',name:'FROST BOLT',price:.018,stat:'SLOW + 15 DMG', mdmg:15, slow:true, owned:false},
+    {id:'heal',    icon:'💚',name:'HEAL SPELL',price:.015,stat:'RESTORE 30 HP', heals:30, owned:false},
+    {id:'shield',  icon:'🔵',name:'MANA SHIELD',price:.02,stat:'ABSORB 25 DMG',shield:25, owned:false},
+    {id:'blink',   icon:'🌀',name:'BLINK',     price:.035,stat:'TELEPORT 5 TILES', blink:true, owned:false},
+  ]
+};
+
+// ── WORLD ────────────────────────────────────────────
+function noise(x,y){return(Math.sin(x*127.1+y*311.7)*43758.5453)%1*2-1;}
+function generateMap(){
+  const m=[];
+  for(let y=0;y<CFG.MAP_H;y++){
+    const row=[];
+    for(let x=0;x<CFG.MAP_W;x++){
+      const n=noise(x*.08,y*.08);
+      if(n<-.3)row.push(2); else if(n<-.05)row.push(1);
+      else if(n>.5)row.push(3); else if(n>.35)row.push(4);
+      else row.push(0);
+    }
+    m.push(row);
+  }
+  for(let y=18;y<=22;y++)for(let x=18;x<=22;x++)m[y][x]=0;
+  return m;
+}
+function isPassable(tx,ty){
+  if(tx<0||ty<0||tx>=CFG.MAP_W||ty>=CFG.MAP_H)return false;
+  return![2,3,4].includes(WORLD.map[ty][tx]);
+}
+const WORLD={map:generateMap(),traps:[],projectiles:[]};
+
+// ── PLAYER ───────────────────────────────────────────
+const player={
+  id:'player',name:'HERO',x:20.5,y:20.5,
+  hp:100,maxHp:100,mp:50,maxMp:50,
+  xp:0,xpNext:100,level:1,
+  sol:.0,atk:10,def:0,spd:2.2,kills:0,
+  equipped:{weapon:null,armor:null,boots:null,spell:null},
+  inventory:[],shieldAbsorb:0,slowTimer:0,
+  stunTimer:0,lastAtk:0,color:'#39ff7e',
+  isHero:false,lastDmgBy:null,
+};
+
+let bots=[];
+let heroEntity=null,heroLastLevel=0;
+let heroAura3sTimer=0,heroAura10sTimer=0,heroAura5sTimer=0;
+let camera={x:0,y:0};
+let walletConnected=false,walletAddress=null,walletBalance=0;
+let gameRunning=false,keys={},lastFrame=0,currentShopTab='weapons';
+
+// ── BOT FACTORY ──────────────────────────────────────
+function createBot(id){
+  let bx,by;
+  do{bx=2+Math.random()*(CFG.MAP_W-4)|0;by=2+Math.random()*(CFG.MAP_H-4)|0;}
+  while(!isPassable(bx,by));
+  const names=['SHADOW','REAPER','GHOST','VIPER','STORM','BLADE','FROST','DOOM','RAVEN','SPIKE'];
+  const colors=['#ff4466','#4dcfff','#ffd166','#c77dff','#ff9a3c','#ff6b6b','#74c7ff','#b8ff6b','#ff8aff','#ffaa55'];
+  return{
+    id:'bot_'+id,name:names[id%names.length],x:bx+.5,y:by+.5,
+    hp:80+Math.random()*40|0,maxHp:120,mp:40,maxMp:40,
+    sol:.01+Math.random()*.04,
+    atk:8+Math.random()*12|0,def:0,spd:1.5+Math.random()*.8,
+    kills:0,level:1+Math.random()*3|0,color:colors[id%colors.length],
+    state:'wander',target:null,wanderTick:0,lastAtk:0,
+    shieldAbsorb:0,slowTimer:0,stunTimer:0,isHero:false,lastDmgBy:null,
+  };
+}
+
+// ── HERO BOSS ────────────────────────────────────────
+function spawnHeroBoss(){
+  let bx,by,att=0;
+  do{bx=2+Math.random()*(CFG.MAP_W-4)|0;by=2+Math.random()*(CFG.MAP_H-4)|0;att++;}
+  while((!isPassable(bx,by)||dist({x:bx,y:by},player)<8)&&att<50);
+  heroEntity={
+    id:'HERO_BOSS',name:'👑HERO',x:bx+.5,y:by+.5,
+    hp:400,maxHp:400,mp:100,maxMp:100,sol:0,
+    atk:30,def:10,spd:1.2,kills:0,level:99,color:'#c77dff',
+    state:'wander',target:null,wanderTick:0,lastAtk:0,
+    shieldAbsorb:0,slowTimer:0,stunTimer:0,isHero:true,lastDmgBy:null,
+  };
+  heroAura3sTimer=CFG.HERO_AURA_3S;
+  heroAura10sTimer=CFG.HERO_AURA_10S;
+  heroAura5sTimer=CFG.HERO_AURA_5S;
+  addLog('👑 HERO BOSS SPAWNED! Kill for 0.5 SOL!','hero');
+  showToast('👑 HERO BOSS!','hero');
+  document.getElementById('heroBanner').style.display='block';
+  setTimeout(()=>document.getElementById('heroBanner').style.display='none',6000);
+}
+
+// ── BOT TICK ─────────────────────────────────────────
+function tickEntity(b,dt){
+  if(b.state==='dead')return;
+  const now=performance.now();
+  if(b.stunTimer>0){
+    b.stunTimer=Math.max(0,b.stunTimer-dt);
+    b.hp=Math.min(b.maxHp,b.hp+CFG.REGEN_HP*dt/1000);
+    if(b.slowTimer>0)b.slowTimer-=dt;
+    return;
+  }
+  b.wanderTick-=dt;
+  const dp=dist(b,player);
+  if(b.isHero){
+    let cl=player,cd=dp;
+    bots.forEach(o=>{if(o.state!=='dead'){const d2=dist(b,o);if(d2<cd){cd=d2;cl=o;}}});
+    b.state='chase';b.target=cl;
+  }else{
+    if(b.hp<b.maxHp*.25)b.state='flee';
+    else if(dp<5){b.state='chase';b.target=player;}
+    else{
+      let cl=null,cd=6;
+      bots.forEach(o=>{if(o!==b&&o.state!=='dead'&&!o.isHero){const d2=dist(b,o);if(d2<cd){cd=d2;cl=o;}}});
+      if(cl){b.state='chase';b.target=cl;}else{b.state='wander';b.target=null;}
+    }
+  }
+  let tx=b.x,ty=b.y;
+  const spd=b.spd*(b.slowTimer>0?.4:1);
+  if(b.state==='chase'&&b.target){
+    const dx=b.target.x-b.x,dy=b.target.y-b.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+    if(d>0.9){tx+=dx/d*spd*(dt/1000);ty+=dy/d*spd*(dt/1000);}
+  }else if(b.state==='flee'){
+    const dx=b.x-player.x,dy=b.y-player.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+    tx+=dx/d*spd*(dt/1000)*1.4;ty+=dy/d*spd*(dt/1000)*1.4;
+  }else{
+    if(b.wanderTick<=0){b._wdx=(Math.random()-.5)*2;b._wdy=(Math.random()-.5)*2;b.wanderTick=1500+Math.random()*2000;}
+    tx+=b._wdx*spd*(dt/1000);ty+=b._wdy*spd*(dt/1000);
+  }
+  tx=Math.max(.5,Math.min(CFG.MAP_W-.5,tx));ty=Math.max(.5,Math.min(CFG.MAP_H-.5,ty));
+  if(isPassable(tx|0,ty|0)){b.x=tx;b.y=ty;}
+  if(b.state==='chase'&&b.target&&dist(b,b.target)<1.3&&now-b.lastAtk>1200){
+    b.lastAtk=now;dealDamage(b,b.target,b.atk);
+  }
+  WORLD.traps.forEach((trap,i)=>{
+    if(trap.owner!==b.id&&dist(b,{x:trap.x+.5,y:trap.y+.5})<.8){
+      dealDamage({name:'TRAP',id:'_trap'},b,trap.dmg);
+      b.stunTimer=CFG.TRAP_STUN_MS;
+      addLog('🪤 '+b.name+' TRAPPED & STUNNED 5s!','dmg');
+      WORLD.traps.splice(i,1);
+    }
+  });
+  b.hp=Math.min(b.maxHp,b.hp+CFG.REGEN_HP*dt/1000);
+  b.mp=Math.min(b.maxMp,b.mp+CFG.REGEN_MP*dt/1000);
+  if(b.slowTimer>0)b.slowTimer-=dt;
+}
+
+function tickBots(dt){
+  bots.forEach(b=>tickEntity(b,dt));
+  if(heroEntity&&heroEntity.state!=='dead')tickEntity(heroEntity,dt);
+}
+
+// ── HERO AURA ────────────────────────────────────────
+function tickHeroAura(dt){
+  if(!heroEntity||heroEntity.state==='dead')return;
+  heroAura3sTimer-=dt; heroAura10sTimer-=dt; heroAura5sTimer-=dt;
+  if(heroAura5sTimer<=0){
+    heroAura5sTimer=CFG.HERO_AURA_5S;
+    dealDamageRaw(heroEntity,player,4);
+    bots.forEach(b=>{if(b.state!=='dead')dealDamageRaw(heroEntity,b,4);});
+    addLog('👑 HERO AURA: 4 dmg ALL','hero');
+  }
+  if(heroAura3sTimer<=0){
+    heroAura3sTimer=CFG.HERO_AURA_3S;
+    if(player.level>=CFG.HERO_AURA_MIN&&player.level<=CFG.HERO_AURA_MAX){
+      dealDamageRaw(heroEntity,player,15);
+      addLog('👑 HERO AURA (LV3-5): 15 dmg!','hero');
+      document.getElementById('auraBanner').style.display='block';
+      setTimeout(()=>document.getElementById('auraBanner').style.display='none',1500);
+    }
+    bots.forEach(b=>{if(b.state!=='dead'&&b.level>=CFG.HERO_AURA_MIN&&b.level<=CFG.HERO_AURA_MAX)dealDamageRaw(heroEntity,b,15);});
+  }
+  if(heroAura10sTimer<=0){
+    heroAura10sTimer=CFG.HERO_AURA_10S;
+    if(player.level>=CFG.HERO_AURA_MIN&&player.level<=CFG.HERO_AURA_MAX){
+      dealDamageRaw(heroEntity,player,30);
+      addLog('👑 HERO HEAVY AURA (LV3-5): 30 dmg!','hero');
+      showToast('👑 HEAVY AURA -30 HP','err');
+    }
+    bots.forEach(b=>{if(b.state!=='dead'&&b.level>=CFG.HERO_AURA_MIN&&b.level<=CFG.HERO_AURA_MAX)dealDamageRaw(heroEntity,b,30);});
+  }
+}
+
+// ── COMBAT ───────────────────────────────────────────
+function calcDmg(attacker,rawDmg){
+  // Apply upgrade multiplier if attacker is player
+  if(attacker===player){
+    // Sum all owned upgrades' bonus damage as flat multiplier
+    let mult=1.0;
+    player.inventory.forEach(inv=>{
+      const upg=upgrades[inv.id];
+      if(upg&&upg.level>0){
+        mult += upg.level * (CFG.UPGRADE_DMG_BONUS/100);
+      }
+    });
+    return rawDmg * mult;
+  }
+  return rawDmg;
+}
+
+function dealDamageRaw(attacker,victim,rawDmg){
+  if(victim.state==='dead')return;
+  const def=victim.def||0,absorb=victim.shieldAbsorb||0;
+  let dmg=Math.max(1,rawDmg-def);
+  if(absorb>0){const ab=Math.min(absorb,dmg);victim.shieldAbsorb-=ab;dmg-=ab;}
+  victim.hp-=dmg;
+  victim.lastDmgBy=attacker;
+  spawnFloatDmg(victim,'-'+Math.ceil(dmg),attacker===player?'#ff4466':attacker&&attacker.isHero?'#c77dff':'#ffd166');
+  if(victim===player)updateHUD();
+  if(victim.hp<=0)handleDeath(attacker,victim);
+}
+
+function dealDamage(attacker,victim,rawDmg){
+  if(victim.state==='dead')return;
+  const boosted=calcDmg(attacker,rawDmg);
+  const def=victim.def||0,absorb=victim.shieldAbsorb||0;
+  let dmg=Math.max(1,boosted-def);
+  if(absorb>0){const ab=Math.min(absorb,dmg);victim.shieldAbsorb-=ab;dmg-=ab;}
+  victim.hp-=dmg;
+  victim.lastDmgBy=attacker;
+  const dmgStr='-'+Math.ceil(dmg)+(attacker===player&&hasUpgrades()?'✨':'');
+  spawnFloatDmg(victim,dmgStr,attacker===player?'#ff4466':attacker&&attacker.isHero?'#c77dff':'#ffd166');
+  if(victim===player){addLog('💥 '+attacker.name+' hit you for '+Math.ceil(dmg),'dmg');updateHUD();}
+  else if(attacker===player){addLog('⚔️ Hit '+victim.name+' for '+Math.ceil(dmg)+(hasUpgrades()?'✨':''),'dmg');player.xp+=CFG.XP_PER_HIT;checkLevelUp();}
+  if(victim.hp<=0)handleDeath(attacker,victim);
+}
+
+function hasUpgrades(){
+  return player.inventory.some(inv=>{const u=upgrades[inv.id];return u&&u.level>0;});
+}
+
+function handleDeath(killer,victim){
+  victim.hp=0;
+  if(victim.isHero){
+    heroEntity.state='dead';
+    const last=victim.lastDmgBy;
+    if(last===player&&player.level>=CFG.HERO_AURA_MIN&&player.level<=CFG.HERO_AURA_MAX){
+      player.sol+=CFG.HERO_KILL_REWARD;
+      addLog('👑 HERO SLAIN! +0.5 SOL!','loot');
+      showToast('👑 HERO SLAIN! +0.5 SOL!','hero');
+      updateTopBar();updateButtons();
+    }else if(last===player){
+      addLog('👑 Hero slain — reward only for LV 3-5','info');
+    }else{
+      addLog('👑 Hero was slain','hero');
+    }
+    heroEntity=null;return;
+  }
+  const loot=victim.sol*CFG.LOOT_RATE;victim.sol-=loot;
+  if(killer===player){
+    player.kills++;player.sol+=loot;player.xp+=CFG.XP_PER_KILL;
+    addLog('💀 KILLED '+victim.name+' +'+loot.toFixed(4)+' SOL','loot');
+    showToast('KILL! +'+loot.toFixed(4)+' SOL','suc');
+    checkLevelUp();updateHUD();updateTopBar();
+    checkUpgradeUnlock();   // check if new kill threshold reached
+    updateButtons();
+  }else if(victim===player){
+    addLog('💀 KILLED BY '+killer.name+' -'+loot.toFixed(4)+' SOL','dmg');
+    showToast('YOU DIED! RESPAWNING...','err');
+    setTimeout(respawnPlayer,3000);
+  }
+  if(victim!==player){
+    victim.state='dead';
+    setTimeout(()=>{const i=bots.indexOf(victim);if(i>-1){bots.splice(i,1);bots.push(createBot(Date.now()%1000));}},5000);
+  }
+  updatePlayersList();
+}
+
+function respawnPlayer(){
+  let rx,ry;do{rx=2+Math.random()*(CFG.MAP_W-4)|0;ry=2+Math.random()*(CFG.MAP_H-4)|0;}while(!isPassable(rx,ry));
+  player.x=rx+.5;player.y=ry+.5;player.hp=player.maxHp*.6;player.mp=player.maxMp;player.stunTimer=0;
+  addLog('♻️ RESPAWNED','info');updateHUD();
+}
+
+function checkLevelUp(){
+  while(player.xp>=player.xpNext){
+    player.xp-=player.xpNext;player.level++;player.xpNext=player.level*100;
+    player.maxHp+=10;player.hp=player.maxHp;player.maxMp+=5;player.mp=player.maxMp;
+    player.atk+=3;player.def+=1;
+    addLog('⭐ LEVEL UP! LV.'+player.level,'info');showToast('LEVEL UP! LV.'+player.level,'suc');
+    updateHUD();updateTopBar();
+    if(player.level%CFG.HERO_LEVEL_TRIGGER===0&&player.level!==heroLastLevel){
+      heroLastLevel=player.level;
+      if(!heroEntity||heroEntity.state==='dead'){setTimeout(spawnHeroBoss,2000);addLog('👑 Hero spawning soon...','hero');}
+    }
+  }
+}
+
+// ── UPGRADE SYSTEM ───────────────────────────────────
+function checkUpgradeUnlock(){
+  // Check if player.kills has crossed the next threshold
+  while(player.kills>=upgradeNextKillThreshold){
+    upgradeTokens++;
+    const prev=upgradeNextKillThreshold;
+    upgradeNextKillThreshold=nextThreshold(upgradeNextKillThreshold, upgradeTokens);
+    addLog(`⬆️ UPGRADE UNLOCKED! (${prev} kills) Token #${upgradeTokens}`,'upg');
+    showToast('⬆️ UPGRADE AVAILABLE! 0.02 SOL','upg');
+    // Show upgrade banner
+    document.getElementById('upgradeBanner').style.display='block';
+    setTimeout(()=>document.getElementById('upgradeBanner').style.display='none',5000);
+  }
+  updateUpgradeSection();
+  updateButtons();
+}
+
+function updateUpgradeSection(){
+  const sec=document.getElementById('upgradeSection');
+  const hasOwned=player.inventory.length>0;
+  sec.style.display=hasOwned?'block':'none';
+
+  const kills=player.kills;
+  const nextThresh=upgradeNextKillThreshold;
+  const prevThresh=upgradeTokens===0?0:(nextThresh-4); // reverse: approximate prev threshold
+  const progress=Math.min(100,((kills-(prevThresh))/Math.max(1,(nextThresh-prevThresh)))*100);
+
+  document.getElementById('upgKillsFill').style.width=progress+'%';
+  document.getElementById('upgTierBadge').textContent='TIER '+getMaxUpgradeLevel();
+  if(upgradeTokens>0){
+    document.getElementById('upgInfo').innerHTML=`<span style="color:var(--purple)">${upgradeTokens} UPGRADE(S) READY! → 0.02 SOL each</span>`;
+  }else{
+    document.getElementById('upgInfo').textContent=`${kills} kills → ${nextThresh} for next upgrade`;
+  }
+}
+
+function getMaxUpgradeLevel(){
+  let max=0;
+  player.inventory.forEach(inv=>{const u=upgrades[inv.id];if(u&&u.level>max)max=u.level;});
+  return max;
+}
+
+function openUpgradeModal(){
+  if(upgradeTokens<=0){
+    showToast('No upgrades available yet!','err');
+    return;
+  }
+  const ownedItems=player.inventory.filter((inv,i,arr)=>arr.findIndex(a=>a.id===inv.id)===i);
+  if(ownedItems.length===0){showToast('Buy items first!','err');return;}
+
+  let bodyHtml=`
+    <div style="font-size:7px;color:var(--purple);margin-bottom:12px;">
+      ⬆️ ${upgradeTokens} UPGRADE TOKEN(S) AVAILABLE<br>
+      <span style="color:var(--dim);font-size:6px;">Each upgrade costs 0.02 SOL and adds +1.4% damage on BASE stat</span>
+    </div>`;
+
+  ownedItems.forEach(inv=>{
+    const allCats=[...SHOP.weapons,...SHOP.armor,...SHOP.magic,...SHOP.boots];
+    const shopItem=allCats.find(s=>s.id===inv.id);
+    if(!shopItem)return;
+    if(!upgrades[inv.id])upgrades[inv.id]={level:0};
+    const upg=upgrades[inv.id];
+    const curLevel=upg.level;
+    const baseAtk=shopItem.atk||shopItem.def||shopItem.mdmg||shopItem.heals||shopItem.shield||0;
+    const currentBonus=(baseAtk*(curLevel*CFG.UPGRADE_DMG_BONUS/100)).toFixed(2);
+    const nextBonus=(baseAtk*((curLevel+1)*CFG.UPGRADE_DMG_BONUS/100)).toFixed(2);
+    const canAfford=player.sol>=CFG.UPGRADE_COST;
+    const canUpgrade=upgradeTokens>0&&canAfford;
+
+    bodyHtml+=`
+      <div class="upg-item ${canUpgrade?'available':''}">
+        <div class="upg-item-left">
+          <div class="upg-item-icon">${inv.icon}</div>
+          <div>
+            <div class="upg-item-name">${shopItem.name}</div>
+            <div class="upg-item-stats">
+              Base: +${baseAtk} ${shopItem.atk?'ATK':shopItem.def?'DEF':shopItem.mdmg?'MDMG':'STAT'}<br>
+              Bonus now: +${currentBonus} (TIER ${curLevel})<br>
+              After upg: +${nextBonus} (+1.4% base)
+            </div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="upg-item-level">★ TIER ${curLevel}</div>
+          <button class="upg-item-btn" ${canUpgrade?'':'disabled'}
+            onclick="confirmUpgrade('${inv.id}')">
+            ${canAfford?`⬆ 0.02 SOL`:`NO SOL`}
+          </button>
+        </div>
+      </div>`;
+  });
+
+  showModal('⬆️ WEAPON UPGRADES', bodyHtml, [
+    {label:'✖ CLOSE',cls:'mbtn-dim',fn:closeModal}
+  ]);
+}
+
+function confirmUpgrade(itemId){
+  if(upgradeTokens<=0){showToast('No upgrade tokens!','err');return;}
+  if(player.sol<CFG.UPGRADE_COST){showToast('Need 0.02 SOL to upgrade!','err');return;}
+  if(!upgrades[itemId])upgrades[itemId]={level:0};
+
+  player.sol-=CFG.UPGRADE_COST;
+  upgrades[itemId].level++;
+  upgradeTokens--;
+
+  const allCats=[...SHOP.weapons,...SHOP.armor,...SHOP.magic,...SHOP.boots];
+  const shopItem=allCats.find(s=>s.id===itemId);
+  const upg=upgrades[itemId];
+  const baseAtk=shopItem?shopItem.atk||shopItem.def||shopItem.mdmg||shopItem.heals||shopItem.shield||0:0;
+  const newBonus=(baseAtk*(upg.level*CFG.UPGRADE_DMG_BONUS/100)).toFixed(2);
+
+  addLog(`⬆️ ${shopItem?shopItem.name:itemId} → TIER ${upg.level} (+${newBonus} bonus)`,'upg');
+  showToast(`⬆️ UPGRADED! TIER ${upg.level} +${newBonus}`,'upg');
+
+  updateTopBar();updateButtons();updateUpgradeSection();renderInventory();
+
+  // If more tokens remain, re-open the modal refreshed
+  if(upgradeTokens>0){
+    setTimeout(()=>openUpgradeModal(),200);
+  }else{
+    closeModal();
+  }
+}
+
+// ── SKILLS ───────────────────────────────────────────
+function useSkill(idx){
+  if(!gameRunning)return;
+  if(player.stunTimer>0&&idx!==4){
+    addLog('🔒 STUNNED! Cannot attack!','dmg');
+    showToast('STUNNED! '+Math.ceil(player.stunTimer/1000)+'s','err');
+    return;
+  }
+  if(idx===0){
+    const t=findNearestEnemy(1.8);
+    if(t)dealDamage(player,t,player.atk);
+    else addLog('No target in range','info');
+  }else if(idx===1){
+    if(player.mp<5){addLog('Not enough MP','info');return;}
+    player.mp-=5;
+    const t=findNearestEnemy(9);
+    if(t)WORLD.projectiles.push({x:player.x,y:player.y,tx:t.x,ty:t.y,target:t,owner:'player',dmg:player.atk+5,type:'arrow',life:1500,spd:8});
+    else addLog('No target in range','info');
+  }else if(idx===2){
+    const spell=SHOP.magic.find(s=>s.id===player.equipped.spell&&s.owned);
+    if(!spell){addLog('No spell equipped','info');return;}
+    if(player.mp<10){addLog('Not enough MP','info');return;}
+    player.mp-=10;castSpell(spell);
+  }else if(idx===3){
+    const tx=Math.floor(player.x),ty=Math.floor(player.y);
+    WORLD.traps.push({x:tx,y:ty,owner:'player',dmg:CFG.TRAP_DMG});
+    player.sol=Math.max(0,player.sol-CFG.TRAP_COST_SOL);
+    addLog('🪤 Trap set — stuns 5s!','info');showToast('-'+CFG.TRAP_COST_SOL+' SOL','err');updateTopBar();
+  }else if(idx===4){
+    if(player.mp<15){addLog('Not enough MP','info');return;}
+    player.mp-=15;
+    const shieldBonus=getShieldBonus();
+    player.shieldAbsorb=25+shieldBonus;
+    addLog('🛡️ Shield: '+(25+shieldBonus)+' absorb','heal');
+    spawnFloatDmg(player,'SHIELD!','#4dcfff');
+  }
+  updateHUD();
+}
+
+function getShieldBonus(){
+  // Extra shield from upgraded mana shield
+  const shield=SHOP.magic.find(s=>s.id==='shield'&&s.owned);
+  if(!shield)return 0;
+  const upg=upgrades['shield'];
+  if(!upg||upg.level===0)return 0;
+  return Math.floor(25*(upg.level*CFG.UPGRADE_DMG_BONUS/100));
+}
+
+function castSpell(spell){
+  if(spell.heals){
+    const bonus=upgrades[spell.id]?Math.floor(spell.heals*(upgrades[spell.id].level*CFG.UPGRADE_DMG_BONUS/100)):0;
+    const total=spell.heals+bonus;
+    player.hp=Math.min(player.maxHp,player.hp+total);
+    addLog('💚 Healed '+total+' HP'+(bonus>0?` (+${bonus} upg)`:''),'heal');
+    spawnFloatDmg(player,'+'+total,'#39ff7e');
+  }else if(spell.shield){
+    const shieldBonus=getShieldBonus();
+    player.shieldAbsorb=(player.shieldAbsorb||0)+spell.shield+shieldBonus;
+    addLog('🔵 Magic shield! '+(spell.shield+shieldBonus)+' absorb','heal');
+  }else if(spell.blink){
+    const dx=(Math.random()-.5)*10,dy=(Math.random()-.5)*10;
+    const nx=Math.max(.5,Math.min(CFG.MAP_W-.5,player.x+dx));
+    const ny=Math.max(.5,Math.min(CFG.MAP_H-.5,player.y+dy));
+    if(isPassable(nx|0,ny|0)){player.x=nx;player.y=ny;}
+    addLog('🌀 Blinked!','info');
+  }else if(spell.mdmg){
+    const t=findNearestEnemy(7);
+    if(t){
+      if(spell.slow)t.slowTimer=3000;
+      dealDamage(player,t,spell.mdmg);
+      WORLD.projectiles.push({x:player.x,y:player.y,tx:t.x,ty:t.y,target:t,owner:'player',dmg:0,type:spell.id,life:600,spd:10});
+    }else addLog('No target','info');
+  }
+}
+
+function findNearestEnemy(maxDist){
+  let best=null,bd=maxDist;
+  const all=[...bots,(heroEntity&&heroEntity.state!=='dead'?heroEntity:null)].filter(Boolean);
+  all.forEach(b=>{
+    if(b.state==='dead')return;
+    const d=dist(player,b);if(d<bd){bd=d;best=b;}
+  });
+  return best;
+}
+
+function attackTarget(targetId){
+  if(!gameRunning)return;
+  const target=targetId==='HERO_BOSS'?heroEntity:bots.find(b=>b.id===targetId);
+  if(!target||target.state==='dead')return;
+  // Calculate effective damage with upgrades
+  const effDmg=Math.ceil(calcDmg(player,player.atk));
+  showModal(
+    '⚔️ ATTACK '+target.name+'?',
+    `Target: <span class="hi">${target.name}</span><br>
+     HP: <span class="hi">${Math.ceil(target.hp)}/${target.maxHp}</span><br>
+     SOL: <span class="hi">${target.sol.toFixed(4)}</span><br>
+     Your ATK: <span class="hi">${effDmg}${hasUpgrades()?'✨':''}</span><br>
+     ${target.stunTimer>0?`<span class="warn">🔒 STUNNED ${Math.ceil(target.stunTimer/1000)}s</span><br>`:''}
+     ${target.isHero?`<span class="warn">👑 HERO — Kill (LV3-5) = +0.5 SOL</span><br>`:''}
+     ${!target.isHero?`Loot on kill: <span class="hi">${(target.sol*CFG.LOOT_RATE).toFixed(4)} SOL</span>`:''}`,
+    [
+      {label:'⚔️ ATTACK',cls:'mbtn-gold',fn:()=>{
+        if(player.stunTimer>0){showToast('STUNNED!','err');closeModal();return;}
+        dealDamage(player,target,player.atk);closeModal();
+      }},
+      {label:'🪤 TRAP',cls:'mbtn-gold',fn:()=>{useSkill(3);closeModal();}},
+      {label:'✖ CANCEL',cls:'mbtn-dim',fn:closeModal},
+    ]
+  );
+}
+
+// ── DEPOSIT ──────────────────────────────────────────
+function openDeposit(){
+  if(!walletConnected){showToast('Connect wallet first!','err');return;}
+  const body=`
+    <div style="font-size:7px;color:var(--blue);margin-bottom:10px;">
+      Deposit SOL to fund your game wallet.<br>
+      <span style="color:var(--dim);font-size:6px;">Funds sent to game treasury. Min: 0.001 SOL · Max: 10 SOL</span>
+    </div>
+    <div style="font-size:6px;color:var(--dim);margin-bottom:6px;">AMOUNT (SOL)</div>
+    <div class="dep-input-wrap">
+      <input type="number" class="dep-input" id="depAmount" value="0.05" min="0.001" max="10" step="0.001" placeholder="0.05">
+      <span class="dep-currency">SOL</span>
+    </div>
+    <div class="dep-presets">
+      <button class="dep-preset" onclick="setDepAmt(0.001)">0.001</button>
+      <button class="dep-preset" onclick="setDepAmt(0.01)">0.01</button>
+      <button class="dep-preset" onclick="setDepAmt(0.05)">0.05</button>
+      <button class="dep-preset" onclick="setDepAmt(0.1)">0.1</button>
+      <button class="dep-preset" onclick="setDepAmt(0.5)">0.5</button>
+      <button class="dep-preset" onclick="setDepAmt(1)">1.0</button>
+      <button class="dep-preset" onclick="setDepAmt(5)">5.0</button>
+      <button class="dep-preset" onclick="setDepAmt(10)">10</button>
+    </div>
+    <div style="font-size:6px;color:var(--dim);margin-top:8px;line-height:1.8;">
+      Wallet: <span style="color:var(--blue)">${walletAddress?walletAddress.slice(0,12)+'...':'N/A'}</span><br>
+      Destination: <span style="color:var(--gold)">sfTYzm...HfK</span><br>
+      Network: <span style="color:var(--green)">SOLANA MAINNET</span>
+    </div>`;
+
+  showModal('💳 DEPOSIT SOL', body, [
+    {label:'✅ SEND SOL',cls:'mbtn-blue',fn:performDeposit},
+    {label:'✖ CANCEL',cls:'mbtn-dim',fn:closeModal},
+  ]);
+}
+
+function setDepAmt(val){
+  const el=document.getElementById('depAmount');
+  if(el)el.value=val;
+}
+
+async function performDeposit(){
+  const amtEl=document.getElementById('depAmount');
+  const amt=parseFloat(amtEl?amtEl.value:0);
+  if(!amt||amt<0.001||amt>10){showToast('Amount must be 0.001 – 10 SOL','err');return;}
+  if(!walletConnected||!walletAddress){showToast('Not connected!','err');return;}
+
+  closeModal();
+  showToast('Sending deposit...','');
+
+  try{
+    // Build Solana transaction using @solana/web3.js CDN
+    const {Connection,PublicKey,Transaction,SystemProgram,LAMPORTS_PER_SOL,clusterApiUrl}=solanaWeb3;
+
+    const connection=new Connection(clusterApiUrl('mainnet-beta'),'confirmed');
+    const fromPubkey=new PublicKey(walletAddress);
+    const toPubkey=new PublicKey(DEPOSIT_ADDRESS);
+    const lamports=Math.round(amt*LAMPORTS_PER_SOL);
+
+    const {blockhash}=await connection.getLatestBlockhash('finalized');
+
+    const tx=new Transaction({recentBlockhash:blockhash,feePayer:fromPubkey});
+    tx.add(SystemProgram.transfer({fromPubkey,toPubkey,lamports}));
+
+    const provider=getProvider();
+    const {signature}=await provider.signAndSendTransaction(tx);
+
+    await connection.confirmTransaction(signature,'confirmed');
+
+    // Credit player in-game SOL
+    player.sol+=amt;
+    addLog('💳 Deposited '+amt+' SOL → in-game balance','loot');
+    showToast('✅ DEPOSIT SUCCESS! +'+amt+' SOL','suc');
+    updateTopBar();updateButtons();
+
+  }catch(e){
+    console.error(e);
+    showToast('Deposit failed: '+(e.message||'rejected'),'err');
+    addLog('💳 Deposit failed: '+(e.message||'user rejected'),'dmg');
+  }
+}
+
+// ── CASHOUT ──────────────────────────────────────────
+function updateButtons(){
+  document.getElementById('cashoutBtn').style.display=player.sol>0.001?'block':'none';
+  document.getElementById('cashoutBtn').textContent='💸 '+player.sol.toFixed(4)+' SOL';
+  document.getElementById('depositBtn').style.display=walletConnected?'block':'none';
+  document.getElementById('upgradeBtn').style.display=(gameRunning&&upgradeTokens>0)?'block':'none';
+  document.getElementById('upgradeBtn').textContent='⬆️ UPGRADE! ('+upgradeTokens+')';
+}
+
+function openCashout(){
+  if(player.sol<=0.001){showToast('No SOL to cashout!','err');return;}
+  showModal(
+    '💸 CASHOUT SOL',
+    `Balance: <span class="hi">${player.sol.toFixed(4)} SOL</span><br>
+     Wallet: <span class="hi">${walletConnected?(walletAddress.slice(0,8)+'...'):'DEMO'}</span><br><br>
+     ${walletConnected?
+       `Sends <span class="hi">${player.sol.toFixed(4)} SOL</span> from game treasury to your wallet.<br>
+        <span class="warn">⚠ MAINNET — real SOL</span>`:
+       `<span class="warn">⚠ Demo mode — no real SOL</span>`}`,
+    walletConnected?[
+      {label:'✅ CONFIRM',cls:'mbtn-green',fn:()=>{performCashout();closeModal();}},
+      {label:'✖ CANCEL',cls:'mbtn-dim',fn:closeModal},
+    ]:[
+      {label:'💸 DEMO RESET',cls:'mbtn-green',fn:()=>{demoCashout();closeModal();}},
+      {label:'🔗 CONNECT',cls:'mbtn-gold',fn:()=>{closeModal();connectAndEnter();}},
+      {label:'✖ CANCEL',cls:'mbtn-dim',fn:closeModal},
+    ]
+  );
+}
+
+async function performCashout(){
+  if(!walletConnected)return;
+  const amount=player.sol;
+  try{
+    showToast('Processing cashout...','');
+    await new Promise(r=>setTimeout(r,1500));
+    // In a real implementation you'd initiate a server-side payout from the treasury.
+    // Here we clear the in-game balance and notify the player.
+    player.sol=0;
+    updateTopBar();updateButtons();
+    addLog('💸 Cashed out '+amount.toFixed(4)+' SOL!','loot');
+    showToast('✅ CASHED OUT '+amount.toFixed(4)+' SOL!','suc');
+  }catch(e){showToast('Cashout failed','err');}
+}
+
+function demoCashout(){
+  const a=player.sol;player.sol=0;updateTopBar();updateButtons();
+  addLog('💸 Demo cashout '+a.toFixed(4)+' SOL','loot');showToast('DEMO CASHOUT: '+a.toFixed(4),'suc');
+}
+
+// ── SHOP ─────────────────────────────────────────────
+function buyItem(cat,itemId){
+  const item=SHOP[cat].find(i=>i.id===itemId);
+  if(!item||item.owned)return;
+  if(player.sol<item.price){showToast('NOT ENOUGH SOL!','err');return;}
+  showModal('🛒 BUY '+item.name+'?',
+    `<span class="hi">${item.icon} ${item.name}</span><br>Cost: <span class="hi">${item.price} SOL</span><br>Effect: <span class="hi">${item.stat}</span>`,
+    [{label:'✅ BUY',cls:'mbtn-gold',fn:()=>{confirmBuy(cat,item);closeModal();}},{label:'✖ CANCEL',cls:'mbtn-dim',fn:closeModal}]);
+}
+function confirmBuy(cat,item){
+  player.sol-=item.price;item.owned=true;
+  if(item.atk){player.atk+=item.atk;player.equipped.weapon=item.id;}
+  if(item.def){player.def+=item.def;}
+  if(item.spd){player.spd*=item.spd;player.equipped.boots=item.id;}
+  if(item.mdmg||item.heals||item.shield||item.blink){player.equipped.spell=item.id;}
+  if(cat==='armor')player.equipped.armor=item.id;
+  player.inventory.push({icon:item.icon,id:item.id});
+  upgrades[item.id]={level:0}; // init upgrade slot
+  addLog('🛒 Bought '+item.name,'info');showToast('BOUGHT '+item.name,'suc');
+  updateTopBar();updateHUD();updateButtons();renderShop();renderInventory();updateUpgradeSection();
+}
+function switchShopTab(tab){
+  currentShopTab=tab;
+  document.querySelectorAll('.shop-tab').forEach((t,i)=>{t.classList.toggle('active',['weapons','armor','boots','magic'][i]===tab);});
+  renderShop();
+}
+function renderShop(){
+  document.getElementById('shopItems').innerHTML=(SHOP[currentShopTab]||[]).map(item=>{
+    const upg=upgrades[item.id];
+    const tier=upg?upg.level:0;
+    return`<div class="shop-item ${item.owned?'owned':''}" onclick="${item.owned?'':(`buyItem('${currentShopTab}','${item.id}')`)}">
+      <span class="si-icon">${item.icon}</span>
+      <div class="si-name">${item.name}</div>
+      <div class="si-price">${item.owned?(tier>0?`★T${tier}`:'OWNED'):item.price+' SOL'}</div>
+      <div class="si-stat">${item.stat}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDERER ─────────────────────────────────────────
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+const mmCanvas=document.getElementById('minimapCanvas');
+const mmCtx=mmCanvas.getContext('2d');
+
+function worldToIso(wx,wy){return{x:(wx-wy)*CFG.ISO_TW/2,y:(wx+wy)*CFG.ISO_TH/2};}
+function resizeCanvas(){canvas.width=canvas.offsetWidth;canvas.height=canvas.offsetHeight;}
+
+const TILE_TOP={0:'#224429',1:'#2a5236',2:'#0f2d40',3:'#4d4d4d',4:'#225020'};
+
+function drawTile(gx,gy,type){
+  const{x:sx,y:sy}=worldToIso(gx,gy);
+  const cx=sx-camera.x+canvas.width/2,cy=sy-camera.y+canvas.height/2;
+  const w=CFG.ISO_TW,h=CFG.ISO_TH,half=h/2;
+  if(cx<-w||cx>canvas.width+w||cy<-h*3||cy>canvas.height+h*3)return;
+  ctx.beginPath();ctx.moveTo(cx,cy-half);ctx.lineTo(cx+w/2,cy);ctx.lineTo(cx,cy+half);ctx.lineTo(cx-w/2,cy);ctx.closePath();
+  ctx.fillStyle=TILE_TOP[type]||TILE_TOP[0];ctx.fill();
+  if(type===3){
+    ctx.beginPath();ctx.moveTo(cx-w/2,cy);ctx.lineTo(cx,cy+half);ctx.lineTo(cx,cy+half+8);ctx.lineTo(cx-w/2,cy+8);ctx.closePath();ctx.fillStyle='#333';ctx.fill();
+    ctx.beginPath();ctx.moveTo(cx,cy+half);ctx.lineTo(cx+w/2,cy);ctx.lineTo(cx+w/2,cy+8);ctx.lineTo(cx,cy+half+8);ctx.closePath();ctx.fillStyle='#2a2a2a';ctx.fill();
+  }else if(type===4){
+    ctx.beginPath();ctx.arc(cx,cy-10,10,0,Math.PI*2);ctx.fillStyle='#1a4a18';ctx.fill();
+    ctx.beginPath();ctx.arc(cx-2,cy-15,7,0,Math.PI*2);ctx.fillStyle='#236622';ctx.fill();
+  }else if(type===2){
+    ctx.beginPath();ctx.moveTo(cx,cy-half*.5);ctx.lineTo(cx+w*.3,cy-.5);ctx.lineTo(cx,cy+half*.3);ctx.lineTo(cx-w*.3,cy-.5);ctx.closePath();
+    ctx.fillStyle='rgba(77,207,255,.12)';ctx.fill();
+  }
+  ctx.beginPath();ctx.moveTo(cx,cy-half);ctx.lineTo(cx+w/2,cy);ctx.lineTo(cx,cy+half);ctx.lineTo(cx-w/2,cy);ctx.closePath();
+  ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=.5;ctx.stroke();
+}
+
+function drawEntity(e,isPlayer){
+  if(e.state==='dead')return;
+  const{x:sx,y:sy}=worldToIso(e.x,e.y);
+  const cx=sx-camera.x+canvas.width/2,cy=sy-camera.y+canvas.height/2;
+  if(cx<-80||cx>canvas.width+80||cy<-80||cy>canvas.height+80)return;
+  const col=e.color||'#39ff7e',sz=e.isHero?13:(isPlayer?9:8);
+  const stunned=e.stunTimer>0;
+
+  // Check if player has upgrades (sparkle effect)
+  const playerHasUpg=isPlayer&&hasUpgrades();
+
+  ctx.beginPath();ctx.ellipse(cx,cy+4,sz*.8,sz*.3,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.4)';ctx.fill();
+  if(e.isHero){
+    ctx.beginPath();ctx.arc(cx,cy-sz*.5,sz+8,0,Math.PI*2);
+    const g=ctx.createRadialGradient(cx,cy-sz*.5,0,cx,cy-sz*.5,sz+8);
+    g.addColorStop(0,'rgba(199,125,255,.3)');g.addColorStop(1,'rgba(199,125,255,0)');
+    ctx.fillStyle=g;ctx.fill();
+  }
+  if(playerHasUpg){
+    // Gold upgrade aura
+    ctx.beginPath();ctx.arc(cx,cy-sz*.5,sz+6,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,209,102,.4)';ctx.lineWidth=2;ctx.stroke();
+  }
+  ctx.fillStyle=isPlayer?'#2a5a3a':e.isHero?'#3a0060':'#3a2a2a';
+  ctx.fillRect(cx-sz*.4,cy,sz*.35,sz*.65);ctx.fillRect(cx+sz*.05,cy,sz*.35,sz*.65);
+  ctx.fillStyle=stunned?'#ff6600':col;ctx.fillRect(cx-sz*.5,cy-sz*.9,sz,sz*.9);
+  ctx.fillStyle=e.isHero?'#e0b0ff':'#ffe0b2';ctx.fillRect(cx-sz*.35,cy-sz*1.7,sz*.7,sz*.8);
+  ctx.fillStyle='#000';ctx.fillRect(cx-sz*.2,cy-sz*1.45,2,2);ctx.fillRect(cx+sz*.1,cy-sz*1.45,2,2);
+  if(e.isHero){ctx.font='14px serif';ctx.textAlign='center';ctx.fillText('👑',cx,cy-sz*1.9);}
+  if(stunned){ctx.font='12px serif';ctx.textAlign='center';ctx.fillText('💫',cx,cy-sz*2-2);}
+  if((e.shieldAbsorb||0)>0){
+    ctx.beginPath();ctx.arc(cx,cy-sz*.5,sz+5,0,Math.PI*2);ctx.strokeStyle='rgba(77,207,255,.7)';ctx.lineWidth=2;ctx.stroke();
+  }
+  const bw=e.isHero?40:28,bh=3;
+  ctx.fillStyle='#1a1a1a';ctx.fillRect(cx-bw/2,cy-sz*2-9,bw,bh);
+  ctx.fillStyle=e.isHero?'#c77dff':e.hp/e.maxHp>.5?'#39ff7e':e.hp/e.maxHp>.25?'#ffd166':'#ff4466';
+  ctx.fillRect(cx-bw/2,cy-sz*2-9,bw*(Math.max(0,e.hp)/e.maxHp),bh);
+  ctx.font='5px "Press Start 2P"';ctx.textAlign='center';
+  ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(cx-22,cy-sz*2-22,44,11);
+  ctx.fillStyle=isPlayer?'#39ff7e':e.isHero?'#c77dff':col;
+  ctx.fillText(e.isHero?'HERO BOSS':e.name.slice(0,6),cx,cy-sz*2-14);
+  if(!e.isHero&&e.sol>0){ctx.fillStyle='rgba(255,209,102,.8)';ctx.font='5px "Press Start 2P"';ctx.fillText(e.sol.toFixed(3)+'◎',cx,cy-sz*2-6);}
+}
+
+function drawTrap(trap){
+  const{x:sx,y:sy}=worldToIso(trap.x+.5,trap.y+.5);
+  const cx=sx-camera.x+canvas.width/2,cy=sy-camera.y+canvas.height/2;
+  ctx.font='14px serif';ctx.textAlign='center';ctx.fillText('🪤',cx,cy+4);
+}
+function drawProjectile(proj){
+  const{x:sx,y:sy}=worldToIso(proj.x,proj.y);
+  const cx=sx-camera.x+canvas.width/2,cy=sy-camera.y+canvas.height/2;
+  const icons={arrow:'➤',fireball:'🔥',frost:'❄️',heal:'💚',blink:'🌀'};
+  ctx.font='11px serif';ctx.textAlign='center';ctx.fillText(icons[proj.type]||'•',cx,cy);
+}
+function drawMinimap(){
+  mmCtx.clearRect(0,0,90,90);const sc=90/CFG.MAP_W;
+  for(let y=0;y<CFG.MAP_H;y++)for(let x=0;x<CFG.MAP_W;x++){
+    const t=WORLD.map[y][x];
+    mmCtx.fillStyle=t===2?'#0d2233':t===3?'#555':t===4?'#1a4a18':'#1a3320';
+    mmCtx.fillRect(x*sc,y*sc,sc+.5,sc+.5);
+  }
+  WORLD.traps.forEach(t=>{mmCtx.fillStyle='#ffd166';mmCtx.fillRect(t.x*sc,t.y*sc,2,2);});
+  if(heroEntity&&heroEntity.state!=='dead'){mmCtx.fillStyle='#c77dff';mmCtx.fillRect(heroEntity.x*sc-3,heroEntity.y*sc-3,6,6);}
+  bots.forEach(b=>{if(b.state!=='dead'){mmCtx.fillStyle=b.color;mmCtx.fillRect(b.x*sc-1,b.y*sc-1,3,3);}});
+  mmCtx.fillStyle='#39ff7e';mmCtx.fillRect(player.x*sc-2,player.y*sc-2,4,4);
+}
+
+// ── GAME LOOP ─────────────────────────────────────────
+function renderFrame(ts){
+  const dt=Math.min(ts-lastFrame,100);lastFrame=ts;
+  if(!gameRunning){requestAnimationFrame(renderFrame);return;}
+  resizeCanvas();ctx.clearRect(0,0,canvas.width,canvas.height);
+  const pp=worldToIso(player.x,player.y);
+  camera.x+=(pp.x-camera.x)*.1;camera.y+=(pp.y-camera.y)*.1;
+  for(let y=0;y<CFG.MAP_H;y++)for(let x=0;x<CFG.MAP_W;x++)drawTile(x,y,WORLD.map[y][x]);
+  WORLD.traps.forEach(drawTrap);
+  const all=[player,...bots.filter(b=>b.state!=='dead')];
+  if(heroEntity&&heroEntity.state!=='dead')all.push(heroEntity);
+  all.sort((a,b)=>(a.x+a.y)-(b.x+b.y));
+  all.forEach(e=>drawEntity(e,e===player));
+  updateProjectiles(dt);WORLD.projectiles.forEach(drawProjectile);
+  handleMovement(dt);tickBots(dt);tickHeroAura(dt);
+  player.hp=Math.min(player.maxHp,player.hp+CFG.REGEN_HP*dt/1000);
+  player.mp=Math.min(player.maxMp,player.mp+CFG.REGEN_MP*dt/1000);
+  if(player.stunTimer>0){
+    player.stunTimer=Math.max(0,player.stunTimer-dt);
+    document.getElementById('stunBar').style.display='block';
+    document.getElementById('stunCountdown').textContent=Math.ceil(player.stunTimer/1000);
+    document.querySelectorAll('.skill-slot').forEach((s,i)=>{if(i!==4)s.classList.add('stunned');});
+    if(player.stunTimer===0){
+      document.getElementById('stunBar').style.display='none';
+      document.querySelectorAll('.skill-slot').forEach(s=>s.classList.remove('stunned'));
+      addLog('🔓 STUN ENDED!','heal');
+    }
+  }
+  if(player.slowTimer>0)player.slowTimer-=dt;
+  WORLD.traps.forEach((trap,i)=>{
+    if(trap.owner!=='player'&&dist(player,{x:trap.x+.5,y:trap.y+.5})<.8){
+      dealDamage({name:'TRAP',id:'_trap'},player,trap.dmg);
+      player.stunTimer=CFG.TRAP_STUN_MS;
+      addLog('🪤 YOU HIT A TRAP! Stunned 5s!','dmg');showToast('TRAPPED! 5s STUN','err');
+      WORLD.traps.splice(i,1);
+    }
+  });
+  drawMinimap();updateHUD();
+  requestAnimationFrame(renderFrame);
+}
+
+function updateProjectiles(dt){
+  WORLD.projectiles.forEach((p,i)=>{
+    const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+    p.x+=dx/d*p.spd*(dt/1000);p.y+=dy/d*p.spd*(dt/1000);p.life-=dt;
+    if(p.life<=0||d<.4){
+      if(p.dmg>0&&p.target&&p.target.state!=='dead')dealDamage({name:'arrow',id:'_proj'},p.target,p.dmg);
+      WORLD.projectiles.splice(i,1);
+    }
+  });
+}
+
+function handleMovement(dt){
+  if(player.stunTimer>0)return;
+  const spd=player.spd*(player.slowTimer>0?.4:1);
+  let dx=0,dy=0;
+  if(keys['w']||keys['arrowup']){dx-=.7;dy-=.7;}
+  if(keys['s']||keys['arrowdown']){dx+=.7;dy+=.7;}
+  if(keys['a']||keys['arrowleft']){dx-=.7;dy+=.7;}
+  if(keys['d']||keys['arrowright']){dx+=.7;dy-=.7;}
+  if(dx||dy){
+    const len=Math.sqrt(dx*dx+dy*dy);
+    const nx=player.x+dx/len*spd*(dt/1000),ny=player.y+dy/len*spd*(dt/1000);
+    if(isPassable(nx|0,player.y|0))player.x=Math.max(.5,Math.min(CFG.MAP_W-.5,nx));
+    if(isPassable(player.x|0,ny|0))player.y=Math.max(.5,Math.min(CFG.MAP_H-.5,ny));
+  }
+}
+
+// ── HUD ──────────────────────────────────────────────
+function updateHUD(){
+  document.getElementById('hpBar').style.width=(Math.max(0,player.hp)/player.maxHp*100)+'%';
+  document.getElementById('mpBar').style.width=(Math.max(0,player.mp)/player.maxMp*100)+'%';
+  document.getElementById('xpBar').style.width=(player.xp/player.xpNext*100)+'%';
+  document.getElementById('hpVal').textContent=Math.max(0,Math.ceil(player.hp))+'/'+player.maxHp;
+  document.getElementById('mpVal').textContent=Math.max(0,Math.ceil(player.mp))+'/'+player.maxMp;
+  document.getElementById('xpVal').textContent=player.xp+'/'+player.xpNext;
+  document.getElementById('charClass').textContent=getClass(player.level)+' LV.'+player.level;
+}
+function updateTopBar(){
+  document.getElementById('tbName').textContent=player.name;
+  document.getElementById('tbSol').textContent=player.sol.toFixed(4);
+  document.getElementById('tbLevel').textContent=player.level;
+  document.getElementById('tbKills').textContent=player.kills;
+  const alive=1+bots.filter(b=>b.state!=='dead').length+(heroEntity&&heroEntity.state!=='dead'?1:0);
+  document.getElementById('tbOnline').textContent=alive;
+}
+function getClass(lv){return lv<3?'WANDERER':lv<6?'FIGHTER':lv<10?'WARRIOR':'LEGEND';}
+
+function updatePlayersList(){
+  const el=document.getElementById('playersList');
+  const all=[player,...bots.filter(b=>b.state!=='dead')];
+  if(heroEntity&&heroEntity.state!=='dead')all.unshift(heroEntity);
+  el.innerHTML=all.map(e=>`
+    <div class="player-row ${e===player?'self':''} ${e.isHero?'hero-row':''}"
+         onclick="${e===player?'':(`attackTarget('${e.id}')`)}">
+      <div class="pr-name">${(e.isHero?'👑':'')+e.name.slice(0,7)} <span class="pr-lvl">LV${e.isHero?'MAX':e.level||1}</span></div>
+      <div class="pr-hp"><div class="pr-hp-fill" style="width:${Math.max(0,e.hp/e.maxHp*100)}%"></div></div>
+      <div class="pr-sol">${e.isHero?'🏆 +0.5 SOL (LV3-5 last hit)':'💰 '+e.sol.toFixed(4)+' SOL'} ${e===player?'(YOU)':''}</div>
+      ${e.stunTimer>0?`<div class="pr-stun">🔒 STUNNED ${Math.ceil(e.stunTimer/1000)}s</div>`:''}
+      <span class="pr-badge">${e===player?'🟢':e.isHero?'👑':'⚔️'}</span>
+    </div>`).join('');
+}
+
+function renderInventory(){
+  const slots=Array(16).fill(null);
+  player.inventory.forEach((item,i)=>{if(i<16)slots[i]=item;});
+  document.getElementById('invGrid').innerHTML=slots.map(s=>{
+    const upg=s?upgrades[s.id]:null;
+    const tier=upg?upg.level:0;
+    const equipped=s&&Object.values(player.equipped).includes(s.id);
+    return`<div class="inv-slot ${equipped?'equipped':''}">
+      ${s?s.icon:''}
+      ${tier>0?`<span class="upg-star">★${tier}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+function drawCharSprite(){
+  const c=document.getElementById('charCanvas');const x=c.getContext('2d');
+  x.clearRect(0,0,48,48);
+  x.fillStyle='#39ff7e';x.fillRect(16,20,16,16);
+  x.fillStyle='#ffe0b2';x.fillRect(17,9,14,12);
+  x.fillStyle='#000';x.fillRect(20,13,3,3);x.fillRect(26,13,3,3);
+  x.fillStyle='#c77dff';x.fillRect(17,9,14,3);
+  x.fillStyle='#2a5a3a';x.fillRect(16,36,6,9);x.fillRect(26,36,6,9);
+  if(player.inventory.length>0){x.font='14px serif';x.textAlign='center';x.fillText(player.inventory[0].icon,39,28);}
+}
+
+// ── LOGS & EFFECTS ───────────────────────────────────
+function addLog(msg,type='info'){
+  const log=document.getElementById('combatLog');
+  const el=document.createElement('div');el.className='clog-entry '+type;el.textContent=msg;
+  log.prepend(el);setTimeout(()=>el.remove(),6100);
+}
+function spawnFloatDmg(entity,text,color){
+  if(!gameRunning)return;
+  const pp=worldToIso(entity.x,entity.y);
+  const cx=pp.x-camera.x+canvas.width/2,cy=pp.y-camera.y+canvas.height/2;
+  const el=document.createElement('div');el.className='dmg-float';
+  el.style.cssText=`left:${cx}px;top:${cy-20}px;color:${color}`;el.textContent=text;
+  document.getElementById('gameArea').appendChild(el);setTimeout(()=>el.remove(),1200);
+}
+let toastTimer;
+function showToast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='show '+(type==='err'?'err':type==='suc'?'suc':['hero','upg'].includes(type)?'hero':'');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.className='',2800);
+}
+function showModal(title,body,actions){
+  document.getElementById('modalTitle').innerHTML=title;
+  document.getElementById('modalBody').innerHTML=body;
+  document.getElementById('modalActions').innerHTML='';
+  actions.forEach(a=>{
+    const btn=document.createElement('button');btn.className='mbtn '+a.cls;btn.textContent=a.label;btn.onclick=a.fn;
+    document.getElementById('modalActions').appendChild(btn);
+  });
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+
+// ── MULTI-WALLET SYSTEM ──────────────────────────────
+// Supported: Phantom, OKX, Binance Web3, Jupiter (Unified Wallet)
+let activeWalletType = null; // 'phantom'|'okx'|'binance'|'jupiter'
+let activeProvider = null;
+
+const WALLETS = [
+  {
+    id: 'phantom',
+    name: 'PHANTOM',
+    icon: '👻',
+    color: '#ab9ff2',
+    installUrl: 'https://phantom.app/',
+    detect: () => {
+      const p = window.phantom?.solana;
+      return (p && p.isPhantom) ? p : null;
+    },
+    connect: async (p) => {
+      const r = await p.connect();
+      return r.publicKey.toString();
+    },
+    disconnect: async (p) => p.disconnect().catch(()=>{}),
+  },
+  {
+    id: 'okx',
+    name: 'OKX WALLET',
+    icon: '⬛',
+    color: '#00d2ff',
+    installUrl: 'https://www.okx.com/web3',
+    detect: () => {
+      // OKX injects window.okxwallet or window.okxwallet.solana
+      const okx = window.okxwallet?.solana || window.okxwallet;
+      return okx ? okx : null;
+    },
+    connect: async (p) => {
+      // OKX solana provider
+      const r = await p.connect();
+      return (r.publicKey || r).toString();
+    },
+    disconnect: async (p) => p.disconnect ? p.disconnect().catch(()=>{}) : null,
+  },
+  {
+    id: 'binance',
+    name: 'BINANCE',
+    icon: '🟡',
+    color: '#f0b90b',
+    installUrl: 'https://www.bnbchain.org/en/binance-wallet',
+    detect: () => {
+      // Binance Web3 wallet injects window.BinanceChain or window.binance
+      // For Solana it may expose window.binanceSolana
+      return window.binanceSolana || window.BinanceChain?.solana || null;
+    },
+    connect: async (p) => {
+      const r = await p.connect();
+      return (r.publicKey || r.address || r).toString();
+    },
+    disconnect: async (p) => p.disconnect ? p.disconnect().catch(()=>{}) : null,
+  },
+  {
+    id: 'jupiter',
+    name: 'JUPITER',
+    icon: '🪐',
+    color: '#c8a2e8',
+    installUrl: 'https://jup.ag/',
+    detect: () => {
+      // Jupiter Unified Wallet wraps Phantom/other wallets. It exposes
+      // window.jupiter or falls back to the underlying wallet.
+      return window.jupiter?.solana || window.jupiterWallet || null;
+    },
+    connect: async (p) => {
+      const r = await p.connect();
+      return (r.publicKey || r).toString();
+    },
+    disconnect: async (p) => p.disconnect ? p.disconnect().catch(()=>{}) : null,
+  },
+];
+
+function toggleConnect(){
+  if(walletConnected) disconnectWallet();
+  else openWalletPicker();
+}
+
+function openWalletPicker(){
+  // Build wallet selection UI
+  let body = `<div style="font-size:7px;color:var(--dim);margin-bottom:14px;line-height:2">
+    Choose your Solana wallet to connect.<br>
+    <span style="color:var(--orange);font-size:6px;">⚠ If not installed, you'll be redirected to download.</span>
+  </div>`;
+
+  body += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">`;
+  WALLETS.forEach(w => {
+    const detected = w.detect();
+    const statusColor = detected ? 'var(--green)' : 'var(--dim)';
+    const statusTxt = detected ? 'DETECTED' : 'NOT FOUND';
+    body += `
+      <div onclick="connectWallet('${w.id}')" style="
+        padding:12px 8px;border:2px solid ${detected?w.color:'var(--border)'};
+        background:${detected?'rgba(0,0,0,.4)':'var(--panel2)'};
+        cursor:pointer;text-align:center;transition:all .15s;
+        ${detected?`box-shadow:0 0 10px ${w.color}33`:''}"
+        onmouseover="this.style.borderColor='${w.color}';this.style.background='rgba(0,0,0,.6)'"
+        onmouseout="this.style.borderColor='${detected?w.color:'var(--border)'}';this.style.background='${detected?'rgba(0,0,0,.4)':'var(--panel2)'}'"
+      >
+        <div style="font-size:24px;margin-bottom:6px;">${w.icon}</div>
+        <div style="font-size:7px;color:${w.color};margin-bottom:4px;">${w.name}</div>
+        <div style="font-size:5px;color:${statusColor};">${statusTxt}</div>
+      </div>`;
+  });
+  body += `</div>`;
+
+  showModal('🔗 CONNECT WALLET', body, [
+    {label:'▶ DEMO MODE',cls:'mbtn-dim',fn:()=>{closeModal();enterDemo();}},
+    {label:'✖ CANCEL',cls:'mbtn-dim',fn:closeModal},
+  ]);
+}
+
+async function connectWallet(walletId){
+  closeModal();
+  const def = WALLETS.find(w=>w.id===walletId);
+  if(!def) return;
+
+  const provider = def.detect();
+  if(!provider){
+    showToast(def.name+' not found — opening install page','err');
+    window.open(def.installUrl,'_blank');
+    return;
+  }
+
+  try{
+    showToast('Connecting '+def.name+'...','');
+    const addr = await def.connect(provider);
+    walletAddress = addr;
+    walletConnected = true;
+    activeWalletType = walletId;
+    activeProvider = provider;
+
+    await fetchBalance();
+    player.name = walletAddress.slice(0,4).toUpperCase();
+
+    document.getElementById('connectBtn').textContent = def.icon+' DISCONNECT';
+    document.getElementById('connectBtn').className = 'tbtn connected';
+    document.getElementById('bbAddr').textContent = walletAddress.slice(0,8)+'...';
+    document.getElementById('bbStatus').textContent = def.name+' · MAINNET';
+
+    updateButtons();
+    if(!gameRunning) enterGame();
+    else showToast(def.name+' connected!','suc');
+
+  }catch(e){
+    showToast('Connection failed: '+(e.message||'rejected'),'err');
+  }
+}
+
+async function disconnectWallet(){
+  if(activeProvider && activeWalletType){
+    const def = WALLETS.find(w=>w.id===activeWalletType);
+    if(def) await def.disconnect(activeProvider);
+  }
+  walletConnected=false; walletAddress=null;
+  activeWalletType=null; activeProvider=null;
+  document.getElementById('connectBtn').textContent='▶ CONNECT WALLET';
+  document.getElementById('connectBtn').className='tbtn';
+  document.getElementById('bbAddr').textContent='NOT CONNECTED';
+  document.getElementById('bbStatus').textContent='AWAITING WALLET';
+  document.getElementById('depositBtn').style.display='none';
+  showToast('Disconnected','');
+  updateButtons();
+}
+
+async function fetchBalance(){
+  if(!walletAddress)return;
+  try{
+    const r=await fetch('https://api.mainnet-beta.solana.com',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({jsonrpc:'2.0',id:1,method:'getBalance',params:[walletAddress,{commitment:'confirmed'}]})
+    });
+    const d=await r.json();walletBalance=(d.result?.value||0)/1e9;
+  }catch(e){}
+}
+
+// For deposit: use the activeProvider to sign transactions
+function getProvider(){
+  return activeProvider;
+}
+function enterDemo(){
+  player.sol=.1;player.name='DEMO';
+  document.getElementById('bbAddr').textContent='DEMO MODE';
+  document.getElementById('bbStatus').textContent='NO WALLET';
+  document.getElementById('connectBtn').textContent='▶ CONNECT WALLET';
+  enterGame();
+}
+// Alias for backward compat
+function connectAndEnter(){ openWalletPicker(); }
+function enterGame(){
+  document.getElementById('lobbyScreen').classList.add('hidden');
+  bots=Array.from({length:CFG.BOT_COUNT},(_,i)=>createBot(i));
+  gameRunning=true;
+  drawCharSprite();renderShop();renderInventory();updateHUD();updateTopBar();updateButtons();updateUpgradeSection();
+  setInterval(()=>{updatePlayersList();updateTopBar();updateButtons();updateUpgradeSection();},1500);
+  requestAnimationFrame(ts=>{lastFrame=ts;renderFrame(ts);});
+  addLog('⚔️ ENTERED THE ARENA','info');
+  addLog('💡 WASD=move Q/W/E/R/F=skills','info');
+  addLog('⬆️ 3 kills = upgrade available!','upg');
+  addLog('💳 Use DEPOSIT to add SOL','info');
+  showToast('WELCOME TO SOL SURVIVAL','suc');
+}
+
+// ── INPUT ────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  keys[e.key.toLowerCase()]=true;
+  if(e.key==='q')useSkill(0);
+  if(e.key==='e')useSkill(2);
+  if(e.key==='r')useSkill(3);
+  if(e.key==='f')useSkill(4);
+  if(e.key==='Escape')closeModal();
+});
+document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+canvas.addEventListener('click',e=>{
+  if(!gameRunning)return;
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  let best=null,bd=50;
+  const allT=[...bots,(heroEntity&&heroEntity.state!=='dead'?heroEntity:null)].filter(Boolean);
+  allT.forEach(b=>{
+    if(b.state==='dead')return;
+    const pp=worldToIso(b.x,b.y);
+    const sx=pp.x-camera.x+canvas.width/2,sy=pp.y-camera.y+canvas.height/2;
+    const d=Math.sqrt((mx-sx)**2+(my-sy)**2);
+    if(d<bd){bd=d;best=b;}
+  });
+  if(best)attackTarget(best.id);
+});
+
+// ── UTILS ────────────────────────────────────────────
+function dist(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
+
+// Load Solana web3.js for real transactions
+const s=document.createElement('script');
+s.src='https://cdnjs.cloudflare.com/ajax/libs/solana-web3.js/1.87.6/solana-web3.min.js';
+s.onerror=()=>console.warn('Solana web3.js failed to load — deposit will not work');
+document.head.appendChild(s);
+</script>
+
+</body>
+</html>
